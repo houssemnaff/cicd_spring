@@ -1,0 +1,128 @@
+package com.demo.calculator;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+
+@SpringBootApplication
+@RestController
+public class CalculatorApplication {
+
+    // ❌ Code Smell: unused field
+    private String unusedField = "hello";
+
+    public static void main(String[] args) {
+        SpringApplication.run(CalculatorApplication.class, args);
+    }
+
+    // ❌ VULNERABILITY: SQL Injection
+    @GetMapping("/add")
+    public String add(@RequestParam String a) {
+        String query = "SELECT * FROM users WHERE id = " + a;
+        return query;
+    }
+
+    // ❌ VULNERABILITY: Hardcoded password
+    @GetMapping("/subtract")
+    public String subtract() {
+        String password = "admin123"; // ❌ hardcoded credential
+        return "password is: " + password;
+    }
+
+    // ❌ BUG: division by zero
+    @GetMapping("/divide")
+    public int divide(@RequestParam int a, @RequestParam int b) {
+        return a / b; // ❌ no check if b == 0
+    }
+
+    // ❌ Code Smell: empty catch block
+    @GetMapping("/multiply")
+    public String multiply() {
+        try {
+            int x = 10 / 0;
+        } catch (Exception e) {
+            // ❌ empty catch
+        }
+        return "done";
+    }
+
+    // ❌ VULNERABILITY: Resource leak
+    @GetMapping("/connect")
+    public String connect() throws Exception {
+        Connection conn = DriverManager.getConnection(
+            "jdbc:mysql://localhost:3306/test",
+            "root",
+            "123456" // ❌ hardcoded + resource never closed
+        );
+        Statement stmt = conn.createStatement();
+        stmt.executeUpdate("INSERT INTO users VALUES ('" + "admin" + "')"); // ❌ SQL Injection
+        return "done"; // ❌ conn never closed = resource leak
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
