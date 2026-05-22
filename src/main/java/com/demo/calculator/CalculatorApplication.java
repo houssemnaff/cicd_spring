@@ -13,6 +13,7 @@ public class CalculatorApplication {
 
     @GetMapping("/add")
     public int add(@RequestParam int a, @RequestParam int b) {
+        int result = a + b;  // ← SonarQube va détecter : variable inutilisée
         return a + b;
     }
 
