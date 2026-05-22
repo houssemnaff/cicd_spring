@@ -44,12 +44,12 @@ pipeline {
             }
         }
        
-        stage('Deploy to Nexus') {
-            steps {
-                echo 'Publication sur Nexus...'
-                sh 'mvn deploy -DskipTests -s settings.xml'
-            }
-        }
+       stage('Deploy to Nexus') {
+    steps {
+        echo 'Publication sur Nexus...'
+        sh 'mvn deploy -DskipTests -s /home/useradm/.m2/settings.xml'
+    }
+}
     }
    
     post {
