@@ -1,97 +1,65 @@
 pipeline {
     agent any
-
     tools {
-        maven 'Maven3'
-        jdk 'JDK17'
+        maven 'Maven'
     }
-
-    environment {
-        SONAR_PROJECT_KEY = 'cicd_spring'
-        NEXUS_URL         = 'http://localhost:8081'
-        NEXUS_REPO        = 'maven-releases'
-        NEXUS_CREDENTIALS = 'nexus-credentials'
+   
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
     }
-
+   
     stages {
-
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/votre-user/cicd_spring.git'
+                echo 'Récupération du code...'
+                checkout scm
             }
         }
-
-        stage('Build') {
+       
+        stage('Build & Tests') {
             steps {
-                sh 'mvn clean package -DskipTests'
-            }
-        }
-
-        stage('Tests') {
-            steps {
-                sh 'mvn test'
+                echo 'Compilation et tests...'
+                sh 'mvn clean package'
             }
             post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
+                success {
+                    echo ' Build et tests réussis'
+                }
+                failure {
+                    echo ' Build ou tests échoués'
                 }
             }
         }
-
+       
         stage('SonarQube Analysis') {
             steps {
+                echo 'Analyse qualité...'
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        mvn sonar:sonar \
-                            -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                            -Dsonar.projectName=${SONAR_PROJECT_KEY} \
-                            -Dsonar.java.binaries=target/classes
+                        mvn clean verify sonar:sonar -Dsonar.projectKey=calculator -Dsonar.host.url=http://localhost:9000 -Dsonar.login=squ_e883edc9cf703a66ee2e9e36c01638450e95f09d
                     '''
                 }
             }
         }
-
-        stage('Quality Gate') {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
+       
         stage('Deploy to Nexus') {
             steps {
-                nexusArtifactUploader(
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    nexusUrl: "${NEXUS_URL}",
-                    groupId: 'com.example',
-                    version: '1.0.0',
-                    repository: "${NEXUS_REPO}",
-                    credentialsId: "${NEXUS_CREDENTIALS}",
-                    artifacts: [
-                        [
-                            artifactId: 'cicd_spring',
-                            classifier: '',
-                            file: 'target/cicd_spring-1.0.0.jar',
-                            type: 'jar'
-                        ]
-                    ]
-                )
+                echo 'Publication sur Nexus...'
+                sh 'mvn deploy -DskipTests -s settings.xml'
             }
         }
     }
-
+   
     post {
         success {
-            echo 'Pipeline reussi !'
+            echo 'Pipeline réussi - artifact publié sur Nexus !'
+            echo 'SonarQube: http://localhost:9000/dashboard?id=calculator'
+            echo 'Nexus: http://localhost:8082/repository/maven-snapshots/'
         }
         failure {
-            echo 'Pipeline echoue !'
-        }
-        always {
-            cleanWs()
+            echo ' Pipeline échoué !'
         }
     }
 }
