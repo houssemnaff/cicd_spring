@@ -47,8 +47,7 @@ pipeline {
        stage('Deploy to Nexus') {
     steps {
         echo 'Publication sur Nexus...'
-        sh 'mvn deploy -DskipTests -s /home/useradm/.m2/settings.xml'
-    }
+sh 'mvn deploy -DskipTests -s /var/lib/jenkins/.m2/settings.xml'    }
 }
     }
    
